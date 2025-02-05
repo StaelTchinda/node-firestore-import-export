@@ -67,7 +67,7 @@ const nodePath = program.opts()[params.nodePath.key];
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
-  console.log(colors.bold('Export from Firestore complete 🏋️'));
+  console.log(colors.bold('Export from Firestore complete 🏋️') + ' - Results: ' + results);
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
 
   console.log('Saving Results');

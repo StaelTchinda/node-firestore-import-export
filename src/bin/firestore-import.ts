@@ -6,7 +6,7 @@ import process from 'process';
 import fs from 'fs';
 import {firestoreImport} from '../lib';
 import {getCredentialsFromFile, getDBReferenceFromPath, getFirestoreDBReference} from '../lib/firestore-helpers';
-import {loadJsonFile} from 'load-json-file';
+import { getJsonFromFile } from './helpers';
 import {
   accountCredentialsEnvironmentKey,
   ActionAbortedError,
@@ -64,7 +64,7 @@ const unattendedConfirmation = program.opts()[params.yesToImport.key];
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
   const db = getFirestoreDBReference(credentials, databaseId);
   const pathReference = await getDBReferenceFromPath(db, nodePath);
-  const data = await loadJsonFile(backupFile);
+  const data = await getJsonFromFile(backupFile);
 
   if (!unattendedConfirmation) {
     const nodeLocation = (<FirebaseFirestore.DocumentReference | FirebaseFirestore.CollectionReference>pathReference)

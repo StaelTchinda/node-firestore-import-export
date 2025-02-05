@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin';
 import {IFirebaseCredentials} from '../interfaces/IFirebaseCredentials';
 import { FirebaseFirestoreError, getFirestore } from 'firebase-admin/firestore';
+import { getJsonFromFile } from './helpers';
 
 const SLEEP_TIME = 1000;
 
 const getCredentialsFromFile = async (credentialsFilename: string): Promise<IFirebaseCredentials> => {
-  const { loadJsonFile } = await import('load-json-file');
-  return loadJsonFile(credentialsFilename);
+  return getJsonFromFile<IFirebaseCredentials>(credentialsFilename);
 };
 
 const getFirestoreDBReference = (credentials: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
@@ -104,6 +104,7 @@ type anyFirebaseRef = admin.firestore.Firestore |
 
 export {
   getCredentialsFromFile,
+  getJsonFromFile,
   getFirestoreDBReference,
   getDBReferenceFromPath,
   isLikeDocument,

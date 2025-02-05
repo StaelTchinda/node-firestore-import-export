@@ -59,7 +59,7 @@ const prettyPrint = Boolean(program.opts()[params.prettyPrint.key]);
 const nodePath = program.opts()[params.nodePath.key];
 
 (async () => {
-  console.log('Getting Credentials');
+  console.log(`Getting Credentials from ${accountCredentialsPath}`);
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
   console.log('Getting Firestore DB Reference');
   const db = getFirestoreDBReference(credentials, databaseId);

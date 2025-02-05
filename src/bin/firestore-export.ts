@@ -5,11 +5,11 @@ import process from 'process';
 import fs from 'fs';
 import {firestoreExport} from '../lib';
 import {getCredentialsFromFile, getDBReferenceFromPath, getFirestoreDBReference} from '../lib/firestore-helpers';
-import {accountCredentialsEnvironmentKey, buildOption, commandLineParams as params, packageInfo} from './bin-common';
+import {accountCredentialsEnvironmentKey, buildOption, commandLineParams as params, packageInfo, isPathFile, isPathFolder} from './bin-common';
 
 commander.version(packageInfo.version)
   .option(...buildOption(params.accountCredentialsPath))
-  .option(...buildOption(params.backupFileExport))
+  .option(...buildOption(params.backupPathExport))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.prettyPrint))
   .parse(process.argv);
@@ -27,9 +27,9 @@ if (!fs.existsSync(accountCredentialsPath)) {
   process.exit(1);
 }
 
-const backupFile = commander[params.backupFileExport.key];
-if (!backupFile) {
-  console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupFileExport.key) + ' - ' + params.backupFileExport.description);
+const backupPath = commander[params.backupPathExport.key];
+if (!backupPath) {
+  console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupPathExport.key) + ' - ' + params.backupPathExport.description);
   commander.help();
   process.exit(1);
 }
@@ -56,9 +56,24 @@ const nodePath = commander[params.nodePath.key];
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
-  await writeResults(stringResults, backupFile);
-  console.log(colors.yellow(`Results were saved to ${backupFile}`));
-  console.log(colors.bold(colors.green('All done 🎉')));
+  // Check if the backup is a file or a folder. If it is a folder, we will save each collection in a separate file.
+  if (isPathFile(backupPath)) {
+    await writeResults(stringResults, backupPath);
+    console.log(colors.yellow(`Results were saved to ${backupPath}`));
+    console.log(colors.bold(colors.green('All done 🎉')));
+    return;
+  } else if (isPathFolder(backupPath)) {
+    const collections = Object.keys(results);
+    for (const collection of collections) {
+      const collectionBackupFile = `${backupPath}/${collection}.json`;
+      const collectionStringResults = JSON.stringify(results[collection], undefined, prettyPrint ? 2 : undefined);
+      await writeResults(collectionStringResults, collectionBackupFile);
+      console.log(colors.yellow(`Collection ${collection} was saved to ${collectionBackupFile}`));
+    } 
+  } else {
+    console.log(colors.bold(colors.red('Backup file is not a file or a folder: ')) + colors.bold(backupPath));
+    process.exit(1);
+  }
 })().catch((error) => {
   if (error instanceof Error) {
     console.log(colors.red(error.message));

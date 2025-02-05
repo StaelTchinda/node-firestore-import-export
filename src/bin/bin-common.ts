@@ -1,4 +1,5 @@
 const packageInfo = require('../../package.json');
+import fs from 'fs';
 const accountCredentialsEnvironmentKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const defaultBackupFilename = 'firebase-export.json';
 
@@ -17,11 +18,11 @@ const commandLineParams: { [param: string]: Params } =
       args: '<path>',
       description: 'Filename to store backup. (e.g. backups/full-backup.json).',
     },
-    backupFileExport: {
+    backupPathExport: {
       shortKey: 'b',
-      key: 'backupFile',
+      key: 'backupPath',
       args: '<path>',
-      description: 'Filename to store backup. (e.g. backups/full-backup.json).',
+      description: 'Path to the file or the folder to store backup. Can be a file like e.g. backups/full-backup.json or a folder like backups/collections with multiple json\'s where each json will represent a collection.',
     },
     nodePath: {
       shortKey: 'n',
@@ -53,6 +54,10 @@ const commandLineParams: { [param: string]: Params } =
 
 const buildOption = ({shortKey, key, args = '', description}: Params): [string, string] => [`-${shortKey} --${key} ${args}`, description];
 
+const isPathFolder = (path: string): boolean => fs.lstatSync(path).isDirectory();
+
+const isPathFile = (path: string): boolean => fs.lstatSync(path).isFile();
+
 /*
 See https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
  */
@@ -63,7 +68,7 @@ class ActionAbortedError extends Error {
   }
 }
 
-export {packageInfo, accountCredentialsEnvironmentKey, commandLineParams, buildOption, ActionAbortedError};
+export {packageInfo, accountCredentialsEnvironmentKey, commandLineParams, buildOption, ActionAbortedError, isPathFolder, isPathFile};
 
 interface Params {
   shortKey: string;

@@ -146,7 +146,7 @@ firestore-export -p
 #### Export
 * `-a`, `--accountCredentials` `<path>` - path to Google Cloud account credentials JSON file. 
   If missing, will look at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable for the path. 
-* `-b`, `--backupFile` `<path>`- Filename to store backup. (e.g. backups/full-backup.json).
+* `-b`, `--backupPath` `<path>`- Path to the file or the folder to store backup. Can be a file like e.g. backups/full-backup.json or a folder like backups/collections with multiple json\'s where each json will represent a collection.
   Defaults to `firestore-export.json` if missing.
 * `-n`, `--nodePath` `<path>`- Path to database node to start (e.g. collectionA/docB/collectionC).
   Backs up full database if empty or missing.
@@ -155,17 +155,17 @@ firestore-export -p
 ##### Examples
 ###### Export full database
 ```bash
-firestore-export --accountCredentials path/to/credentials/file.json --backupFile /backups/myDatabase.json
+firestore-export --accountCredentials path/to/credentials/file.json --backupPath /backups/myDatabase.json
 ```
 
 ###### Export with pretty printing
 ```bash
-firestore-export --accountCredentials path/to/credentials/file.json --backupFile /backups/myDatabase.json --prettyPrint
+firestore-export --accountCredentials path/to/credentials/file.json --backupPath /backups/myDatabase.json --prettyPrint
 ```
 
 ###### Export from a specific path (and all its children/collections)
 ```bash
-firestore-export --accountCredentials path/to/credentials/file.json --backupFile /backups/myDatabase.json --nodePath collectionA/document1/collectionCC
+firestore-export --accountCredentials path/to/credentials/file.json --backupPath /backups/myDatabase.json --nodePath collectionA/document1/collectionCC
 ```
 
 #### Import

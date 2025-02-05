@@ -63,12 +63,13 @@ const nodePath = commander[params.nodePath.key];
     console.log(colors.bold(colors.green('All done 🎉')));
     return;
   } else if (isPathFolder(backupPath)) {
-    const collections = Object.keys(results);
-    for (const collection of collections) {
-      const collectionBackupFile = `${backupPath}/${collection}.json`;
-      const collectionStringResults = JSON.stringify(results[collection], undefined, prettyPrint ? 2 : undefined);
+    const collections = results['__collections__'];
+    const collectionNames = Object.keys(collections);
+    for (const collectionName of collectionNames) {
+      const collectionBackupFile = `${backupPath}/${collectionName}.json`;
+      const collectionStringResults = JSON.stringify(collections[collectionName], undefined, prettyPrint ? 2 : undefined);
       await writeResults(collectionStringResults, collectionBackupFile);
-      console.log(colors.yellow(`Collection ${collection} was saved to ${collectionBackupFile}`));
+      console.log(colors.yellow(`Collection ${collectionName} was saved to ${collectionBackupFile}`));
     } 
   } else {
     console.log(colors.bold(colors.red('Backup file is not a file or a folder: ')) + colors.bold(backupPath));

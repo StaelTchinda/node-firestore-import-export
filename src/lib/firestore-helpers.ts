@@ -1,11 +1,11 @@
 import * as admin from 'firebase-admin';
-import {loadJsonFile} from 'load-json-file';
 import {IFirebaseCredentials} from '../interfaces/IFirebaseCredentials';
 import { FirebaseFirestoreError } from 'firebase-admin/firestore';
 
 const SLEEP_TIME = 1000;
 
-const getCredentialsFromFile = (credentialsFilename: string): Promise<IFirebaseCredentials> => {
+const getCredentialsFromFile = async (credentialsFilename: string): Promise<IFirebaseCredentials> => {
+  const { loadJsonFile } = await import('load-json-file');
   return loadJsonFile(credentialsFilename);
 };
 

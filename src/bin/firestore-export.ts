@@ -69,6 +69,7 @@ const nodePath = program.opts()[params.nodePath.key];
   const results = await firestoreExport(pathReference, true);
   console.log(colors.bold('Export from Firestore complete 🏋️') + ' - Results: ' + results);
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
+  console.log('Results: ' + stringResults);
 
   console.log('Saving Results');
   if (isPathFile(backupPath)) {

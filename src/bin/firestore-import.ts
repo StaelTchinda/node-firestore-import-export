@@ -22,7 +22,7 @@ program
   .description(packageInfo.description)
   .version(packageInfo.version);
 
-program.command('firestore-import')
+program
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.backupFileImport))
   .option(...buildOption(params.nodePath))

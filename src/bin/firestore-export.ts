@@ -14,7 +14,7 @@ program
   .description(packageInfo.description)
   .version(packageInfo.version);
 
-program.command('firestore-export')
+program
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.backupPathExport))
   .option(...buildOption(params.nodePath))

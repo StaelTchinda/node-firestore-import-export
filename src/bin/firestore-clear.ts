@@ -22,7 +22,7 @@ program
   .description(packageInfo.description)
   .version(packageInfo.version);
 
-program.command('firestore-clear')
+program
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.yesToClear))

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import commander from 'commander';
+import {Command} from 'commander';
 import colors from 'colors';
 import process from 'process';
 import fs from 'fs';
@@ -15,30 +15,37 @@ import {
 } from './bin-common';
 
 
-commander.version(packageInfo.version)
+const program = new Command();
+
+program
+  .name(packageInfo.name)
+  .description(packageInfo.description)
+  .version(packageInfo.version);
+
+program.command('firestore-clear')
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.yesToClear))
   .option(...buildOption(params.yesToNoWait))
   .parse(process.argv);
 
-const accountCredentialsPath = commander[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
+const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
 if (!accountCredentialsPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
 if (!fs.existsSync(accountCredentialsPath)) {
   console.log(colors.bold(colors.red('Account credentials file does not exist: ')) + colors.bold(accountCredentialsPath));
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
-const nodePath = commander[params.nodePath.key];
+const nodePath = program.opts()[params.nodePath.key];
 
-const unattendedConfirmation = commander[params.yesToClear.key];
-const noWait = commander[params.yesToNoWait.key];
+const unattendedConfirmation = program.opts()[params.yesToClear.key];
+const noWait = program.opts()[params.yesToNoWait.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);

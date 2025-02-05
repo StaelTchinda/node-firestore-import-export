@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import commander from 'commander';
+import {Command} from 'commander';
 import {prompt} from 'enquirer';
 import colors from 'colors';
 import process from 'process';
 import fs from 'fs';
 import {firestoreImport} from '../lib';
 import {getCredentialsFromFile, getDBReferenceFromPath, getFirestoreDBReference} from '../lib/firestore-helpers';
-import loadJsonFile from 'load-json-file';
+import {loadJsonFile} from 'load-json-file';
 import {
   accountCredentialsEnvironmentKey,
   ActionAbortedError,
@@ -15,42 +15,49 @@ import {
   packageInfo,
 } from './bin-common';
 
-commander.version(packageInfo.version)
+const program = new Command();
+
+program
+  .name(packageInfo.name)
+  .description(packageInfo.description)
+  .version(packageInfo.version);
+
+program.command('firestore-import')
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.backupFileImport))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.yesToImport))
   .parse(process.argv);
 
-const accountCredentialsPath = commander[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
+const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
 if (!accountCredentialsPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
 if (!fs.existsSync(accountCredentialsPath)) {
   console.log(colors.bold(colors.red('Account credentials file does not exist: ')) + colors.bold(accountCredentialsPath));
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
-const backupFile = commander[params.backupFileImport.key];
+const backupFile = program.opts()[params.backupFileImport.key];
 if (!backupFile) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupFileImport.key) + ' - ' + params.backupFileImport.description);
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
 if (!fs.existsSync(backupFile)) {
   console.log(colors.bold(colors.red('Backup file does not exist: ')) + colors.bold(backupFile));
-  commander.help();
+  program.help();
   process.exit(1);
 }
 
-const nodePath = commander[params.nodePath.key];
+const nodePath = program.opts()[params.nodePath.key];
 
-const unattendedConfirmation = commander[params.yesToImport.key];
+const unattendedConfirmation = program.opts()[params.yesToImport.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);

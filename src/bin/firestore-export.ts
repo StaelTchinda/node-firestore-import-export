@@ -53,12 +53,13 @@ const writeResults = (results: string, filename: string): Promise<string> => {
   });
 };
 
+const databaseId = program.opts()[params.databaseId.key];
 const prettyPrint = Boolean(program.opts()[params.prettyPrint.key]);
 const nodePath = program.opts()[params.nodePath.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  const db = getFirestoreDBReference(credentials);
+  const db = getFirestoreDBReference(credentials, databaseId);
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);

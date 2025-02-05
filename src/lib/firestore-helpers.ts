@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import {loadJsonFile} from 'load-json-file';
 import {IFirebaseCredentials} from '../interfaces/IFirebaseCredentials';
-import { FirebaseFirestoreError } from 'firebase-admin/firestore';
+import { FirebaseFirestoreError, getFirestore } from 'firebase-admin/firestore';
 
 const SLEEP_TIME = 1000;
 
@@ -9,13 +9,16 @@ const getCredentialsFromFile = (credentialsFilename: string): Promise<IFirebaseC
   return loadJsonFile(credentialsFilename);
 };
 
-const getFirestoreDBReference = (credentials: IFirebaseCredentials): admin.firestore.Firestore => {
+const getFirestoreDBReference = (credentials: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
   admin.initializeApp({
     credential: admin.credential.cert(credentials as any),
     databaseURL: `https://${(credentials as any).project_id}.firebaseio.com`,
   });
-
-  return admin.firestore();
+  if (databaseId) {
+    return getFirestore(admin.app(), databaseId);
+  } else {
+    return admin.firestore();
+  }
 };
 
 const getDBReferenceFromPath = (db: admin.firestore.Firestore, dataPath?: string): admin.firestore.Firestore |

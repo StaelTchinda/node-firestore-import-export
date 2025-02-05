@@ -73,6 +73,10 @@ const nodePath = program.opts()[params.nodePath.key];
     return;
   } else if (isPathFolder(backupPath)) {
     const collections = results['__collections__'];
+    if (!collections) {
+      console.log(colors.bold(colors.red('No collections were found')));
+      process.exit(1);
+    }
     const collectionNames = Object.keys(collections);
     for (const collectionName of collectionNames) {
       const collectionBackupFile = `${backupPath}/${collectionName}.json`;

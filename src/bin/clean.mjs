@@ -1,5 +1,5 @@
-import {deleteAsync} from 'del';
+import {deleteSync} from 'del';
 
 (async () => {
-  await deleteAsync(['dist']);
+  await deleteSync(['dist']);
 })();

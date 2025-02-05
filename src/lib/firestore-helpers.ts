@@ -1,21 +1,24 @@
 import * as admin from 'firebase-admin';
 import {IFirebaseCredentials} from '../interfaces/IFirebaseCredentials';
-import { FirebaseFirestoreError } from 'firebase-admin/firestore';
+import { FirebaseFirestoreError, getFirestore } from 'firebase-admin/firestore';
+import { getJsonFromFile } from './helpers';
 
 const SLEEP_TIME = 1000;
 
 const getCredentialsFromFile = async (credentialsFilename: string): Promise<IFirebaseCredentials> => {
-  const { loadJsonFile } = await import('load-json-file');
-  return loadJsonFile(credentialsFilename);
+  return getJsonFromFile<IFirebaseCredentials>(credentialsFilename);
 };
 
-const getFirestoreDBReference = (credentials: IFirebaseCredentials): admin.firestore.Firestore => {
+const getFirestoreDBReference = (credentials: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
   admin.initializeApp({
     credential: admin.credential.cert(credentials as any),
     databaseURL: `https://${(credentials as any).project_id}.firebaseio.com`,
   });
-
-  return admin.firestore();
+  if (databaseId) {
+    return getFirestore(admin.app(), databaseId);
+  } else {
+    return admin.firestore();
+  }
 };
 
 const getDBReferenceFromPath = (db: admin.firestore.Firestore, dataPath?: string): admin.firestore.Firestore |
@@ -101,6 +104,7 @@ type anyFirebaseRef = admin.firestore.Firestore |
 
 export {
   getCredentialsFromFile,
+  getJsonFromFile,
   getFirestoreDBReference,
   getDBReferenceFromPath,
   isLikeDocument,

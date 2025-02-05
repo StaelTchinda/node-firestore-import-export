@@ -22,14 +22,17 @@ program
   .description(packageInfo.description)
   .version(packageInfo.version);
 
-program.command('firestore-clear')
+program
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.yesToClear))
   .option(...buildOption(params.yesToNoWait))
+  .option(...buildOption(params.databaseId))
   .parse(process.argv);
 
-const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
+const options = program.opts();
+
+const accountCredentialsPath = options[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
 if (!accountCredentialsPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
   program.help();
@@ -42,14 +45,15 @@ if (!fs.existsSync(accountCredentialsPath)) {
   process.exit(1);
 }
 
-const nodePath = program.opts()[params.nodePath.key];
+const databaseId = options[params.databaseId.key];
+const nodePath = options[params.nodePath.key];
 
-const unattendedConfirmation = program.opts()[params.yesToClear.key];
-const noWait = program.opts()[params.yesToNoWait.key];
+const unattendedConfirmation = options[params.yesToClear.key];
+const noWait = options[params.yesToNoWait.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  const db = getFirestoreDBReference(credentials);
+  const db = getFirestoreDBReference(credentials, databaseId);
   const pathReference = getDBReferenceFromPath(db, nodePath);
   const nodeLocation = (<FirebaseFirestore.DocumentReference | FirebaseFirestore.CollectionReference>pathReference)
     .path || '[database root]';

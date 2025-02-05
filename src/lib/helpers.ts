@@ -4,6 +4,7 @@ import {IGeopoint} from '../interfaces/IGeopoint';
 import {IDocumentReference} from '../interfaces/IDocumentReference';
 import DocumentReference = admin.firestore.DocumentReference;
 import GeoPoint = admin.firestore.GeoPoint;
+import fs from 'fs';
 
 // From https://stackoverflow.com/questions/8495687/split-array-into-chunks
 const array_chunks = (array: Array<any>, chunk_size: number): Array<Array<any>> => {
@@ -94,3 +95,14 @@ const isScalar = (val: any) => (typeof val === 'string' || val instanceof String
   || (typeof val === 'boolean');
 
 export {array_chunks, serializeSpecialTypes, unserializeSpecialTypes};
+export const getJsonFromFile = <T>(filename: string): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filename, 'utf8', (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(JSON.parse(data) as T);
+      }
+    });
+  });
+};

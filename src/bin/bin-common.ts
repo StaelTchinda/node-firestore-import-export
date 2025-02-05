@@ -2,6 +2,7 @@ const packageInfo = require('../../package.json');
 import fs from 'fs';
 const accountCredentialsEnvironmentKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const defaultBackupPathname = 'firebase-export.json';
+const defaultDatabaseId = '(default)';
 
 
 const commandLineParams: { [param: string]: Params } =
@@ -11,6 +12,12 @@ const commandLineParams: { [param: string]: Params } =
       key: 'accountCredentials',
       args: '<path>',
       description: `path to Google Cloud account credentials JSON file. If missing, will look at the ${accountCredentialsEnvironmentKey} environment variable for the path. Defaults to '${defaultBackupPathname}' if missing.`,
+    },
+    databaseId: {
+      shortKey: 'd',
+      key: 'databaseId',
+      args: '<id>',
+      description: `Firestore database ID. Defaults to '${defaultDatabaseId}' if missing.`,
     },
     backupPathImport: {
       shortKey: 'b',

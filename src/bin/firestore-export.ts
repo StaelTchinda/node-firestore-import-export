@@ -14,14 +14,17 @@ program
   .description(packageInfo.description)
   .version(packageInfo.version);
 
-program.command('firestore-export')
+program
   .option(...buildOption(params.accountCredentialsPath))
   .option(...buildOption(params.backupPathExport))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.prettyPrint))
+  .option(...buildOption(params.databaseId))
   .parse(process.argv);
 
-const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
+const options = program.opts();
+
+const accountCredentialsPath = options[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
 if (!accountCredentialsPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
   program.help();
@@ -34,7 +37,7 @@ if (!fs.existsSync(accountCredentialsPath)) {
   process.exit(1);
 }
 
-const backupPath = program.opts()[params.backupPathExport.key];
+const backupPath = options[params.backupPathExport.key];
 if (!backupPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupPathExport.key) + ' - ' + params.backupPathExport.description);
   program.help();
@@ -53,17 +56,23 @@ const writeResults = (results: string, filename: string): Promise<string> => {
   });
 };
 
-const prettyPrint = Boolean(program.opts()[params.prettyPrint.key]);
-const nodePath = program.opts()[params.nodePath.key];
+const databaseId = options[params.databaseId.key];
+const prettyPrint = Boolean(options[params.prettyPrint.key]);
+const nodePath = options[params.nodePath.key];
 
 (async () => {
+  console.log(`Getting Credentials from ${accountCredentialsPath}`);
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  const db = getFirestoreDBReference(credentials);
+  console.log('Getting Firestore DB Reference');
+  const db = getFirestoreDBReference(credentials, databaseId);
+  console.log(`Getting DB Reference for database ${databaseId}`);
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
+  console.log('Export from Firestore completed');
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
-  // Check if the backup is a file or a folder. If it is a folder, we will save each collection in a separate file.
+
+  console.log('Saving Results');
   if (isPathFile(backupPath)) {
     await writeResults(stringResults, backupPath);
     console.log(colors.yellow(`Results were saved to ${backupPath}`));
@@ -71,10 +80,17 @@ const nodePath = program.opts()[params.nodePath.key];
     return;
   } else if (isPathFolder(backupPath)) {
     const collections = results['__collections__'];
+    if (!collections || Object.keys(collections).length === 0) {
+      console.log(colors.bold(colors.red('No collections were found')));
+      process.exit(1);
+    }
     const collectionNames = Object.keys(collections);
     for (const collectionName of collectionNames) {
       const collectionBackupFile = `${backupPath}/${collectionName}.json`;
-      const collectionStringResults = JSON.stringify(collections[collectionName], undefined, prettyPrint ? 2 : undefined);
+      const collectionResults = {
+        [collectionName]: collections[collectionName]
+      }
+      const collectionStringResults = JSON.stringify(collectionResults, undefined, prettyPrint ? 2 : undefined);
       await writeResults(collectionStringResults, collectionBackupFile);
       console.log(colors.yellow(`Collection ${collectionName} was saved to ${collectionBackupFile}`));
     } 

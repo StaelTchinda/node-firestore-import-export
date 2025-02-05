@@ -19,6 +19,7 @@ program
   .option(...buildOption(params.backupPathExport))
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.prettyPrint))
+  .option(...buildOption(params.databaseId))
   .parse(process.argv);
 
 const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];

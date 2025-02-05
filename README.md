@@ -172,6 +172,7 @@ firestore-export --accountCredentials path/to/credentials/file.json --backupPath
 #### Import
 * `-a`, `--accountCredentials` `<path>` - path to Google Cloud account credentials JSON file. 
   If missing, will look at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable for the path. 
+* `-d`, `--databaseId` `<id>` - Firestore database ID. Defaults to `(default)` if missing.
 * `-b`, `--backupPath` `<path>`- Path to the file or the folder with the backup data. Can be a file like e.g. backups/full-backup.json or a folder like backups/collections with multiple json\'s where each json will represent a collection.
 * `-n`, `--nodePath` `<path>`- Path to database node to start (e.g. collectionA/docB/collectionC).
 * `-y`, `--yes` - Unattended import without confirmation (like hitting "y" from the command line).
@@ -190,6 +191,7 @@ firestore-import --accountCredentials path/to/credentials/file.json --backupPath
 #### Clear
 * `-a`, `--accountCredentials` `<path>` - path to Google Cloud account credentials JSON file. 
   If missing, will look at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable for the path. 
+* `-d`, `--databaseId` `<id>` - Firestore database ID. Defaults to `(default)` if missing.
 * `-n`, `--nodePath` `<path>`- Path to database node to start (e.g. collectionA/docB/collectionC).
 * `-y`, `--yes` - Unattended clear without confirmation (like hitting "y" from the command line). Command will wait 5
   seconds so you can `Ctrl-C` to stop.

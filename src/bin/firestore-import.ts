@@ -55,13 +55,14 @@ if (!fs.existsSync(backupFile)) {
   process.exit(1);
 }
 
+const databaseId = program.opts()[params.databaseId.key];
 const nodePath = program.opts()[params.nodePath.key];
 
 const unattendedConfirmation = program.opts()[params.yesToImport.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  const db = getFirestoreDBReference(credentials);
+  const db = getFirestoreDBReference(credentials, databaseId);
   const pathReference = await getDBReferenceFromPath(db, nodePath);
   const data = await loadJsonFile(backupFile);
 

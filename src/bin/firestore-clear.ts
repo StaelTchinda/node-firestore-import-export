@@ -42,6 +42,7 @@ if (!fs.existsSync(accountCredentialsPath)) {
   process.exit(1);
 }
 
+const databaseId = program.opts()[params.databaseId.key];
 const nodePath = program.opts()[params.nodePath.key];
 
 const unattendedConfirmation = program.opts()[params.yesToClear.key];
@@ -49,7 +50,7 @@ const noWait = program.opts()[params.yesToNoWait.key];
 
 (async () => {
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  const db = getFirestoreDBReference(credentials);
+  const db = getFirestoreDBReference(credentials, databaseId);
   const pathReference = getDBReferenceFromPath(db, nodePath);
   const nodeLocation = (<FirebaseFirestore.DocumentReference | FirebaseFirestore.CollectionReference>pathReference)
     .path || '[database root]';

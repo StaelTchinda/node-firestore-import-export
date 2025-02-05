@@ -59,13 +59,18 @@ const prettyPrint = Boolean(program.opts()[params.prettyPrint.key]);
 const nodePath = program.opts()[params.nodePath.key];
 
 (async () => {
+  console.log('Getting Credentials');
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
+  console.log('Getting Firestore DB Reference');
   const db = getFirestoreDBReference(credentials, databaseId);
+  console.log('Getting DB Reference from Path');
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
+  console.log(colors.bold('Export from Firestore complete 🏋️'));
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
 
+  console.log('Saving Results');
   if (isPathFile(backupPath)) {
     await writeResults(stringResults, backupPath);
     console.log(colors.yellow(`Results were saved to ${backupPath}`));
@@ -73,7 +78,7 @@ const nodePath = program.opts()[params.nodePath.key];
     return;
   } else if (isPathFolder(backupPath)) {
     const collections = results['__collections__'];
-    if (!collections) {
+    if (!collections || Object.keys(collections).length === 0) {
       console.log(colors.bold(colors.red('No collections were found')));
       process.exit(1);
     }

@@ -24,8 +24,8 @@
     "clear": "node ./dist/bin/firestore-clear.js",
     "build": "npm run tests && npm run clean && tsc",
     "watch": "tsc -w",
-    "clean": "node ./src/bin/clean.js",
-    "tests": "mocha -r ts-node/register tests/**/*.spec.ts",
+    "clean": "node ./src/bin/clean.mjs",
+    "tests": "mocha tests/**/*.spec.ts",
     "snyk-protect": "snyk protect",
     "prepare": "npm run build && npm run snyk-protect"
   },
@@ -60,6 +60,7 @@
     "mocha": "^11.1.0",
     "snyk": "^1.1295.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
   "snyk": true

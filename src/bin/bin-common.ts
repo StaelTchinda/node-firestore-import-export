@@ -1,7 +1,7 @@
 const packageInfo = require('../../package.json');
 import fs from 'fs';
 const accountCredentialsEnvironmentKey = 'GOOGLE_APPLICATION_CREDENTIALS';
-const defaultBackupFilename = 'firebase-export.json';
+const defaultBackupPathname = 'firebase-export.json';
 
 
 const commandLineParams: { [param: string]: Params } =
@@ -10,13 +10,13 @@ const commandLineParams: { [param: string]: Params } =
       shortKey: 'a',
       key: 'accountCredentials',
       args: '<path>',
-      description: `path to Google Cloud account credentials JSON file. If missing, will look at the ${accountCredentialsEnvironmentKey} environment variable for the path. Defaults to '${defaultBackupFilename}' if missing.`,
+      description: `path to Google Cloud account credentials JSON file. If missing, will look at the ${accountCredentialsEnvironmentKey} environment variable for the path. Defaults to '${defaultBackupPathname}' if missing.`,
     },
-    backupFileImport: {
+    backupPathImport: {
       shortKey: 'b',
-      key: 'backupFile',
+      key: 'backupPath',
       args: '<path>',
-      description: 'Filename to store backup. (e.g. backups/full-backup.json).',
+      description: 'Path to the file or the folder with the backup data. Can be a file like e.g. backups/full-backup.json or a folder like backups/collections with multiple json\'s where each json will represent a collection.',
     },
     backupPathExport: {
       shortKey: 'b',

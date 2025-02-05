@@ -63,7 +63,7 @@ const nodePath = program.opts()[params.nodePath.key];
   const credentials = await getCredentialsFromFile(accountCredentialsPath);
   console.log('Getting Firestore DB Reference');
   const db = getFirestoreDBReference(credentials, databaseId);
-  console.log('Getting DB Reference from Path');
+  console.log(`Getting DB Reference for database ${databaseId}`);
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);

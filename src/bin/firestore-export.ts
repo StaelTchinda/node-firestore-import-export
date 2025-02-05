@@ -22,7 +22,9 @@ program
   .option(...buildOption(params.databaseId))
   .parse(process.argv);
 
-const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
+const options = program.opts();
+
+const accountCredentialsPath = options[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
 if (!accountCredentialsPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
   program.help();
@@ -35,7 +37,7 @@ if (!fs.existsSync(accountCredentialsPath)) {
   process.exit(1);
 }
 
-const backupPath = program.opts()[params.backupPathExport.key];
+const backupPath = options[params.backupPathExport.key];
 if (!backupPath) {
   console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupPathExport.key) + ' - ' + params.backupPathExport.description);
   program.help();
@@ -54,9 +56,9 @@ const writeResults = (results: string, filename: string): Promise<string> => {
   });
 };
 
-const databaseId = program.opts()[params.databaseId.key];
-const prettyPrint = Boolean(program.opts()[params.prettyPrint.key]);
-const nodePath = program.opts()[params.nodePath.key];
+const databaseId = options[params.databaseId.key];
+const prettyPrint = Boolean(options[params.prettyPrint.key]);
+const nodePath = options[params.nodePath.key];
 
 (async () => {
   console.log(`Getting Credentials from ${accountCredentialsPath}`);
@@ -67,9 +69,8 @@ const nodePath = program.opts()[params.nodePath.key];
   const pathReference = getDBReferenceFromPath(db, nodePath);
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
-  console.log(colors.bold('Export from Firestore complete 🏋️') + ' - Results: ', results);
+  console.log('Export from Firestore completed');
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
-  console.log('Results: ' + stringResults);
 
   console.log('Saving Results');
   if (isPathFile(backupPath)) {

@@ -22,7 +22,6 @@ const exportData = async (startingRef: admin.firestore.Firestore |
         .then(data => serializeSpecialTypes(data));
     }
     return await batchExecutor([collectionsPromise, dataPromise]).then(res => {
-      console.log(`Exporting data from ${startingRef.path}: `, res);
       return {'__collections__': res[0], ...res[1]};
     });
   } else {

@@ -65,7 +65,7 @@ const nodePath = program.opts()[params.nodePath.key];
   console.log(colors.bold(colors.green('Starting Export 🏋️')));
   const results = await firestoreExport(pathReference, true);
   const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
-  // Check if the backup is a file or a folder. If it is a folder, we will save each collection in a separate file.
+
   if (isPathFile(backupPath)) {
     await writeResults(stringResults, backupPath);
     console.log(colors.yellow(`Results were saved to ${backupPath}`));
@@ -80,7 +80,10 @@ const nodePath = program.opts()[params.nodePath.key];
     const collectionNames = Object.keys(collections);
     for (const collectionName of collectionNames) {
       const collectionBackupFile = `${backupPath}/${collectionName}.json`;
-      const collectionStringResults = JSON.stringify(collections[collectionName], undefined, prettyPrint ? 2 : undefined);
+      const collectionResults = {
+        [collectionName]: collections[collectionName]
+      }
+      const collectionStringResults = JSON.stringify(collectionResults, undefined, prettyPrint ? 2 : undefined);
       await writeResults(collectionStringResults, collectionBackupFile);
       console.log(colors.yellow(`Collection ${collectionName} was saved to ${collectionBackupFile}`));
     } 

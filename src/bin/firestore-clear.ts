@@ -27,6 +27,7 @@ program
   .option(...buildOption(params.nodePath))
   .option(...buildOption(params.yesToClear))
   .option(...buildOption(params.yesToNoWait))
+  .option(...buildOption(params.databaseId))
   .parse(process.argv);
 
 const accountCredentialsPath = program.opts()[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];

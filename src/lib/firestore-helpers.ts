@@ -9,11 +9,15 @@ const getCredentialsFromFile = async (credentialsFilename: string): Promise<IFir
   return getJsonFromFile<IFirebaseCredentials>(credentialsFilename);
 };
 
-const getFirestoreDBReference = (credentials: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
-  admin.initializeApp({
-    credential: admin.credential.cert(credentials as any),
-    databaseURL: `https://${(credentials as any).project_id}.firebaseio.com`,
-  });
+const getFirestoreDBReference = (credentials?: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
+  if (credentials) {
+    admin.initializeApp({
+      credential: admin.credential.cert(credentials as any),
+      databaseURL: `https://${credentials.project_id}.firebaseio.com`,
+    });
+  } else {
+    admin.initializeApp();
+  }
   if (databaseId) {
     return getFirestore(admin.app(), databaseId);
   } else {

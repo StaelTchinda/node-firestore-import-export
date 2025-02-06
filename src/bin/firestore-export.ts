@@ -1,52 +1,115 @@
 #!/usr/bin/env node
-import {Command} from 'commander';
-import colors from 'colors';
-import process from 'process';
-import fs from 'fs';
-import {firestoreExport} from '../lib';
-import {getCredentialsFromFile, getDBReferenceFromPath, getFirestoreDBReference} from '../lib/firestore-helpers';
-import {accountCredentialsEnvironmentKey, buildOption, commandLineParams as params, packageInfo, isPathFile, isPathFolder} from './bin-common';
+import { Command } from "commander";
+import colors from "colors";
+import process from "process";
+import fs from "fs";
+import { firestoreExport } from "../lib";
+import {
+  getCredentialsFromFile,
+  getDBReferenceFromPath,
+  getFirestoreDBReference,
+} from "../lib/firestore-helpers";
+import {
+  accountCredentialsEnvironmentKey,
+  buildOption,
+  commandLineParams as params,
+  packageInfo,
+  isPathFile,
+  isPathFolder,
+} from "./bin-common";
+import { IFirebaseCredentials } from "../interfaces/IFirebaseCredentials";
 
-const program = new Command();
+interface FirestoreExportParams {
+  accountCredentialsPath: string;
+  backupPath: string;
+  databaseId: string;
+  prettyPrint: boolean;
+  nodePath: string;
 
-program
-  .name(packageInfo.name)
-  .description(packageInfo.description)
-  .version(packageInfo.version);
-
-program
-  .option(...buildOption(params.accountCredentialsPath))
-  .option(...buildOption(params.backupPathExport))
-  .option(...buildOption(params.nodePath))
-  .option(...buildOption(params.prettyPrint))
-  .option(...buildOption(params.databaseId))
-  .parse(process.argv);
-
-const options = program.opts();
-
-const accountCredentialsPath = options[params.accountCredentialsPath.key] || process.env[accountCredentialsEnvironmentKey];
-if (!accountCredentialsPath) {
-  console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.accountCredentialsPath.key) + ' - ' + params.accountCredentialsPath.description);
-  program.help();
-  process.exit(1);
+  emulator: boolean;
+  emulatorHost?: string;
 }
 
-if (!fs.existsSync(accountCredentialsPath)) {
-  console.log(colors.bold(colors.red('Account credentials file does not exist: ')) + colors.bold(accountCredentialsPath));
-  program.help();
-  process.exit(1);
+function setupProgram(): Command {
+  const program = new Command();
+  program
+    .name(packageInfo.name)
+    .description(packageInfo.description)
+    .version(packageInfo.version);
+
+  program
+    .option(...buildOption(params.accountCredentialsPath))
+    .option(...buildOption(params.backupPathExport))
+    .option(...buildOption(params.nodePath))
+    .option(...buildOption(params.prettyPrint))
+    .option(...buildOption(params.databaseId))
+    .option(...buildOption(params.emulator))
+    .option(...buildOption(params.emulatorHost))
+    .parse(process.argv);
+
+  return program;
 }
 
-const backupPath = options[params.backupPathExport.key];
-if (!backupPath) {
-  console.log(colors.bold(colors.red('Missing: ')) + colors.bold(params.backupPathExport.key) + ' - ' + params.backupPathExport.description);
-  program.help();
-  process.exit(1);
+function parseParams(program: Command): FirestoreExportParams {
+  const options = program.opts();
+
+  const accountCredentialsPath =
+    options[params.accountCredentialsPath.key] ||
+    process.env[accountCredentialsEnvironmentKey];
+
+  const backupPath = options[params.backupPathExport.key];
+
+  const databaseId =
+    options[params.databaseId.key] || params.databaseId.defaultValue;
+  const prettyPrint = Boolean(options[params.prettyPrint.key]);
+  const nodePath = options[params.nodePath.key] || "";
+  const emulator = Boolean(options[params.emulator.key]);
+  const emulatorHost =
+    options[params.emulatorHost.key] || params.emulatorHost.defaultValue;
+
+
+  return {
+    accountCredentialsPath,
+    backupPath,
+    databaseId,
+    prettyPrint,
+    nodePath,
+    emulator,
+    emulatorHost,
+  };
 }
 
-const writeResults = (results: string, filename: string): Promise<string> => {
+function validateParams(commandParams: FirestoreExportParams): void {
+  if (!commandParams.emulator) {
+    if (!commandParams.accountCredentialsPath) {
+      throw new Error(
+        colors.bold(colors.red("Missing: ")) +
+          colors.bold(params.accountCredentialsPath.key) +
+          " - " +
+          params.accountCredentialsPath.description
+      );
+    }
+    if (!fs.existsSync(commandParams.accountCredentialsPath)) {
+      throw new Error(
+        colors.bold(colors.red("Account credentials file does not exist: ")) +
+          colors.bold(commandParams.accountCredentialsPath)
+      );
+    }
+  }
+
+  if (!commandParams.backupPath) {
+    throw new Error(
+      colors.bold(colors.red("Missing: ")) +
+        colors.bold(params.backupPathExport.key) +
+        " - " +
+        params.backupPathExport.description
+    );
+  }
+}
+
+function writeResults(results: string, filename: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    fs.writeFile(filename, results, 'utf8', err => {
+    fs.writeFile(filename, results, "utf8", (err) => {
       if (err) {
         reject(err);
       } else {
@@ -54,58 +117,80 @@ const writeResults = (results: string, filename: string): Promise<string> => {
       }
     });
   });
-};
+}
 
-const databaseId = options[params.databaseId.key];
-const prettyPrint = Boolean(options[params.prettyPrint.key]);
-const nodePath = options[params.nodePath.key];
-
-(async () => {
-  console.log(`Getting Credentials from ${accountCredentialsPath}`);
-  const credentials = await getCredentialsFromFile(accountCredentialsPath);
-  console.log('Getting Firestore DB Reference');
-  const db = getFirestoreDBReference(credentials, databaseId);
-  console.log(`Getting DB Reference for database ${databaseId}`);
-  const pathReference = getDBReferenceFromPath(db, nodePath);
-  console.log(colors.bold(colors.green('Starting Export 🏋️')));
+async function exportFirestoreData(params: FirestoreExportParams) {
+  let credentials: IFirebaseCredentials | undefined = undefined;
+  if (!params.emulator) {
+    console.log(`Getting Credentials from ${params.accountCredentialsPath}`);
+    credentials = await getCredentialsFromFile(params.accountCredentialsPath);
+  } else {
+    console.log(`Using Firestore Emulator.`);
+    process.env['FIRESTORE_EMULATOR_HOST'] = params.emulatorHost;
+  }
+  console.log("Getting Firestore DB Reference");
+  const db = getFirestoreDBReference(credentials, params.databaseId);
+  console.log(`Getting DB Reference for database ${params.databaseId}`);
+  const pathReference = getDBReferenceFromPath(db, params.nodePath);
+  console.log(colors.bold(colors.green("Starting Export 🏋️")));
   const results = await firestoreExport(pathReference, true);
-  console.log('Export from Firestore completed');
-  const stringResults = JSON.stringify(results, undefined, prettyPrint ? 2 : undefined);
+  console.log("Export from Firestore completed");
+  const stringResults = JSON.stringify(
+    results,
+    undefined,
+    params.prettyPrint ? 2 : undefined
+  );
 
-  console.log('Saving Results');
-  if (isPathFile(backupPath)) {
-    await writeResults(stringResults, backupPath);
-    console.log(colors.yellow(`Results were saved to ${backupPath}`));
-    console.log(colors.bold(colors.green('All done 🎉')));
-    return;
-  } else if (isPathFolder(backupPath)) {
-    const collections = results['__collections__'];
+  console.log("Saving Results");
+  if (isPathFile(params.backupPath)) {
+    await writeResults(stringResults, params.backupPath);
+    console.log(colors.yellow(`Results were saved to ${params.backupPath}`));
+    console.log(colors.bold(colors.green("All done 🎉")));
+  } else if (isPathFolder(params.backupPath)) {
+    const collections = results["__collections__"];
     if (!collections || Object.keys(collections).length === 0) {
-      console.log(colors.bold(colors.red('No collections were found')));
+      console.log(colors.bold(colors.red("No collections were found")));
       process.exit(1);
     }
     const collectionNames = Object.keys(collections);
     for (const collectionName of collectionNames) {
-      const collectionBackupFile = `${backupPath}/${collectionName}.json`;
+      const collectionBackupFile = `${params.backupPath}/${collectionName}.json`;
       const collectionResults = {
-        [collectionName]: collections[collectionName]
-      }
-      const collectionStringResults = JSON.stringify(collectionResults, undefined, prettyPrint ? 2 : undefined);
+        [collectionName]: collections[collectionName],
+      };
+      const collectionStringResults = JSON.stringify(
+        collectionResults,
+        undefined,
+        params.prettyPrint ? 2 : undefined
+      );
       await writeResults(collectionStringResults, collectionBackupFile);
-      console.log(colors.yellow(`Collection ${collectionName} was saved to ${collectionBackupFile}`));
-    } 
+      console.log(
+        colors.yellow(
+          `Collection ${collectionName} was saved to ${collectionBackupFile}`
+        )
+      );
+    }
   } else {
-    console.log(colors.bold(colors.red('Backup file is not a file or a folder: ')) + colors.bold(backupPath));
+    console.log(
+      colors.bold(colors.red("Backup file is not a file or a folder: ")) +
+        colors.bold(params.backupPath)
+    );
     process.exit(1);
   }
+}
+
+const program = setupProgram();
+
+(async () => {
+  const firestoreParams: FirestoreExportParams = parseParams(program);
+  validateParams(firestoreParams);
+  await exportFirestoreData(firestoreParams);
 })().catch((error) => {
   if (error instanceof Error) {
-    console.log(colors.red(error.message));
-    process.exit(1);
+    console.error(colors.red(error.message));
   } else {
-    console.log(colors.red(error));
+    console.error(colors.red(error));
   }
+  program.help();
+  process.exit(1);
 });
-
-
-

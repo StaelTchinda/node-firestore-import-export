@@ -126,7 +126,7 @@ async function exportFirestoreData(params: FirestoreExportParams) {
     credentials = await getCredentialsFromFile(params.accountCredentialsPath);
   } else {
     console.log(`Using Firestore Emulator.`);
-    process.env['FIRESTORE_EMULATOR_HOST'] = params.emulatorHost;
+    process.env["FIRESTORE_EMULATOR_HOST"] = params.emulatorHost;
   }
   console.log("Getting Firestore DB Reference");
   const db = getFirestoreDBReference(credentials, params.databaseId);
@@ -150,7 +150,7 @@ async function exportFirestoreData(params: FirestoreExportParams) {
     const collections = results["__collections__"];
     if (!collections || Object.keys(collections).length === 0) {
       console.log(colors.bold(colors.red("No collections were found")));
-      process.exit(1);
+      return;
     }
     const collectionNames = Object.keys(collections);
     for (const collectionName of collectionNames) {
@@ -171,11 +171,10 @@ async function exportFirestoreData(params: FirestoreExportParams) {
       );
     }
   } else {
-    console.log(
+    throw new Error(
       colors.bold(colors.red("Backup file is not a file or a folder: ")) +
         colors.bold(params.backupPath)
     );
-    process.exit(1);
   }
 }
 

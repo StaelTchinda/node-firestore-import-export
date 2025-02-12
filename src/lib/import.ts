@@ -7,6 +7,8 @@ import {
 import { array_chunks, unserializeSpecialTypes } from "./helpers";
 import { ICollection } from "../interfaces/ICollection";
 
+const DEFAULT_FIRESTORE_BATCH_SIZE: number = 300;
+
 const importData = (
   data: any,
   startingRef: anyFirebaseRef,
@@ -72,8 +74,8 @@ const setDocuments = (
     );
   }
   const collections: Array<any> = [];
-  const chunks = array_chunks(Object.keys(data), 500);
-  const chunkPromises = chunks.map((documentKeys: string[]) => {
+  const chunks = array_chunks(Object.keys(data), DEFAULT_FIRESTORE_BATCH_SIZE);
+  const chunkPromises = chunks.map((documentKeys: string[], index: number) => {
     const batch = startingRef.firestore.batch();
     documentKeys.map((documentKey: string) => {
       if (data[documentKey]["__collections__"]) {

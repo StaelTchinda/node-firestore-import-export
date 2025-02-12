@@ -3,7 +3,7 @@ import fs from 'fs';
 const accountCredentialsEnvironmentKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const defaultBackupPathname = 'firebase-export.json';
 const defaultDatabaseId = '(default)';
-
+const defaultFirestoreEmulatorHost = '127.0.0.1:8080';
 
 const commandLineParams: { [param: string]: Params } =
   {
@@ -12,6 +12,7 @@ const commandLineParams: { [param: string]: Params } =
       key: 'accountCredentials',
       args: '<path>',
       description: `path to Google Cloud account credentials JSON file. If missing, will look at the ${accountCredentialsEnvironmentKey} environment variable for the path. Defaults to '${defaultBackupPathname}' if missing.`,
+      defaultValue: defaultBackupPathname,
     },
     databaseId: {
       shortKey: 'd',
@@ -36,6 +37,18 @@ const commandLineParams: { [param: string]: Params } =
       key: 'nodePath',
       args: '<path>',
       description: `Path to database node (has to be a collection) where import will to start (e.g. collectionA/docB/collectionC). Imports at root level if missing.`,
+    },    
+    emulator: {
+      shortKey: 'e',
+      key: 'emulator',
+      description: 'Use Firestore emulator instead of the production Firestore. When set, the emulatorHost parameter is required and the accountCredentialsPath is ignored.',
+    },
+    emulatorHost: {
+      shortKey: 'h',
+      key: 'emulatorHost',
+      args: '<host>',
+      description: `Firestore emulator host. Defaults to '${defaultFirestoreEmulatorHost}' if missing.`,
+      defaultValue: defaultFirestoreEmulatorHost,
     },
     yesToImport: {
       shortKey: 'y',
@@ -82,4 +95,5 @@ interface Params {
   key: string;
   args?: string;
   description: string;
+  defaultValue?: string | boolean | string[];
 }

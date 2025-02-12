@@ -4,16 +4,21 @@ import { FirebaseFirestoreError, getFirestore } from 'firebase-admin/firestore';
 import { getJsonFromFile } from './helpers';
 
 const SLEEP_TIME = 1000;
+const DEFAULT_PARALLEL_PROMISES_COUNT = 25;
 
 const getCredentialsFromFile = async (credentialsFilename: string): Promise<IFirebaseCredentials> => {
   return getJsonFromFile<IFirebaseCredentials>(credentialsFilename);
 };
 
-const getFirestoreDBReference = (credentials: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
-  admin.initializeApp({
-    credential: admin.credential.cert(credentials as any),
-    databaseURL: `https://${(credentials as any).project_id}.firebaseio.com`,
-  });
+const getFirestoreDBReference = (credentials?: IFirebaseCredentials, databaseId?: string): admin.firestore.Firestore => {
+  if (credentials) {
+    admin.initializeApp({
+      credential: admin.credential.cert(credentials as any),
+      databaseURL: `https://${credentials.project_id}.firebaseio.com`,
+    });
+  } else {
+    admin.initializeApp();
+  }
   if (databaseId) {
     return getFirestore(admin.app(), databaseId);
   } else {
@@ -49,7 +54,7 @@ const isRootOfDatabase = (ref: admin.firestore.Firestore |
 
 const sleep = (timeInMS: number): Promise<void> => new Promise(resolve => setTimeout(resolve, timeInMS));
 
-const batchExecutor = async function <T>(promises: Promise<T>[], batchSize: number = 50) {
+const batchExecutor = async function <T>(promises: Promise<T>[], batchSize: number = DEFAULT_PARALLEL_PROMISES_COUNT): Promise<T[]> {
   const res: T[] = [];
   while (promises.length > 0) {
     const temp = await Promise.all(promises.splice(0, batchSize));

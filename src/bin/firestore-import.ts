@@ -116,11 +116,21 @@ async function readData(path: string): Promise<any> {
     const files = fs
       .readdirSync(path)
       .filter((file) => file.endsWith(".json"));
-    data = { __collections__: {} };
+    data = { "__collections__": {} };
     for (const file of files) {
       const collectionData = await getJsonFromFile<Record<string, any>>(
         `${path}/${file}`
       );
+      if (Object.keys(collectionData).length !== 1) {
+        throw new Error(
+          "Each file in the backup folder should contain a single collection. But found multiple collections in " + file + ": " + Object.keys(collectionData).length
+        );
+      }  else if (Object.keys(collectionData)[0] !== file.replace(".json", "")) {
+        throw new Error(
+          "Each file in the backup folder should have the same name as the single collection. But found collection with name " + Object.keys(collectionData)[0]
+        );
+      }
+
       for (const key in collectionData) {
         data["__collections__"][key] = collectionData[key];
       }

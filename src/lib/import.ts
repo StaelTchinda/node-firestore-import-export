@@ -69,14 +69,16 @@ const setDocuments = (
   logs && console.log(`Writing documents for ${startingRef.path}`);
   if ("__collections__" in data) {
     throw new Error(
-      'Found unexpected "__collection__" in collection data. Does the starting node match' +
+      'Found unexpected "__collections__" in collection data. Does the starting node match' +
         " the root of the incoming data?"
     );
   }
   const collections: Array<any> = [];
   const chunks = array_chunks(Object.keys(data), DEFAULT_FIRESTORE_BATCH_SIZE);
   const chunkPromises = chunks.map((documentKeys: string[], index: number) => {
+    logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: Writing chunk ${index + 1} of ${chunks.length} for ${startingRef.path}`);
     const batch = startingRef.firestore.batch();
+    logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: preparing to write ${documentKeys.length} documents`);
     documentKeys.map((documentKey: string) => {
       if (data[documentKey]["__collections__"]) {
         Object.keys(data[documentKey]["__collections__"]).map((collection) => {
@@ -92,17 +94,25 @@ const setDocuments = (
         merge: mergeWithExisting,
       });
     });
-    return batch.commit();
+    logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: Committing batch`);
+    return batch.commit().then((results) => {
+      logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: Batch committed`);
+      return results;
+    });
   });
   return batchExecutor(chunkPromises)
     .then(() => {
       return collections.map((col) => {
+        logs && console.log(`Writing subcollection for ${col.path}`);
         return setDocuments(col.collection, col.path, mergeWithExisting, logs);
       });
     })
     .then((subCollectionPromises) => batchExecutor(subCollectionPromises))
     .catch((err) => {
       logs && console.error(err);
+    })
+    .finally(() => {
+      logs && console.log(`Finished writing documents for ${startingRef.path}`);
     });
 };
 

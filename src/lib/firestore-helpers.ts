@@ -103,6 +103,66 @@ const safelyGetDocumentReferences = async (collectionRef: FirebaseFirestore.Coll
   return allDocuments;
 };
 
+export interface PaginatedDocumentsResult {
+  documentRefs: FirebaseFirestore.DocumentReference[];
+  lastDocumentId: string | null;
+  hasMore: boolean;
+}
+
+const safelyGetPaginatedDocuments = async (
+  collectionRef: FirebaseFirestore.CollectionReference,
+  options: { limit: number; startAfterDocId?: string },
+  logs = false
+): Promise<PaginatedDocumentsResult> => {
+  const { limit, startAfterDocId } = options;
+  const FieldPath = admin.firestore.FieldPath;
+  let query: FirebaseFirestore.Query = collectionRef.orderBy(FieldPath.documentId()).limit(limit);
+  if (startAfterDocId) {
+    let startAfterSnapshot: FirebaseFirestore.DocumentSnapshot | undefined;
+    let deadlineError = false;
+    do {
+      try {
+        startAfterSnapshot = await collectionRef.doc(startAfterDocId).get();
+        deadlineError = false;
+      } catch (_e: any) {
+        const e = _e as FirebaseFirestoreError;
+        if (e.code && e.code === '4') {
+          logs && console.log(`Deadline Error in getPaginatedDocuments()...waiting ${SLEEP_TIME / 1000} second(s) before retrying`);
+          await sleep(SLEEP_TIME);
+          deadlineError = true;
+        } else {
+          throw e;
+        }
+      }
+    } while (deadlineError);
+    if (startAfterSnapshot?.exists) {
+      query = query.startAfter(startAfterSnapshot);
+    }
+  }
+  let snapshot, deadlineError = false;
+  do {
+    try {
+      snapshot = await query.get();
+      deadlineError = false;
+    } catch (_e: any) {
+      const e = _e as FirebaseFirestoreError;
+      if (e.code && e.code === '4') {
+        logs && console.log(`Deadline Error in getPaginatedDocuments()...waiting ${SLEEP_TIME / 1000} second(s) before retrying`);
+        await sleep(SLEEP_TIME);
+        deadlineError = true;
+      } else {
+        throw e;
+      }
+    }
+  } while (deadlineError || !snapshot);
+  const docs = snapshot.docs;
+  const documentRefs = docs.map((d) => d.ref);
+  const lastDoc = docs.length > 0 ? docs[docs.length - 1] : null;
+  const lastDocumentId = lastDoc ? lastDoc.id : null;
+  const hasMore = docs.length === limit;
+  return { documentRefs, lastDocumentId, hasMore };
+};
+
 type anyFirebaseRef = admin.firestore.Firestore |
   FirebaseFirestore.DocumentReference |
   FirebaseFirestore.CollectionReference
@@ -119,4 +179,5 @@ export {
   anyFirebaseRef,
   safelyGetCollectionsSnapshot,
   safelyGetDocumentReferences,
+  safelyGetPaginatedDocuments,
 };

@@ -70,6 +70,18 @@ const commandLineParams: { [param: string]: Params } =
       key: 'prettyPrint',
       description: 'JSON backups done with pretty-printing.',
     },
+    limit: {
+      shortKey: 'l',
+      key: 'limit',
+      args: '<number>',
+      description: 'Maximum documents to export per collection (cursor-based pagination). Omit for full export.',
+    },
+    startAfter: {
+      shortKey: 's',
+      key: 'startAfter',
+      args: '<docId>',
+      description: 'Document ID to start after (for resuming paginated exports).',
+    },
   };
 
 const buildOption = ({shortKey, key, args = '', description}: Params): [string, string] => [`-${shortKey} --${key} ${args}`, description];

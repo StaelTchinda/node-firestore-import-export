@@ -4,6 +4,7 @@ import { prompt } from "enquirer";
 import colors from "colors";
 import process from "process";
 import fs from "fs";
+import { Presets, SingleBar } from "cli-progress";
 import { firestoreImport } from "../lib";
 import {
   getCredentialsFromFile,
@@ -185,7 +186,26 @@ async function importFirestoreData(params: FirestoreImportParams) {
   }
 
   console.log(colors.bold(colors.green("Starting Import 🏋️")));
-  await firestoreImport(data, pathReference, true, true);
+  let bar: SingleBar | null = null;
+  const onProgress = (done: number, total: number) => {
+    if (total <= 0) return;
+    if (bar === null) {
+      bar = new SingleBar(
+        {
+          format: "Import |{bar}| {percentage}% | {value}/{total} documents | ETA: {eta_formatted}",
+          hideCursor: true,
+          clearOnComplete: true,
+        },
+        Presets.shades_classic
+      );
+      bar.start(total, 0);
+    }
+    bar.update(done);
+  };
+  await firestoreImport(data, pathReference, true, false, onProgress);
+  if (bar !== null) {
+    (bar as SingleBar).stop();
+  }
   console.log(colors.bold(colors.green("All done 🎉")));
 }
 

@@ -3,6 +3,7 @@ import { Command } from "commander";
 import colors from "colors";
 import process from "process";
 import fs from "fs";
+import { Presets, SingleBar } from "cli-progress";
 import {
   getCredentialsFromFile,
   getDBReferenceFromPath,
@@ -148,7 +149,18 @@ async function importFirestoreData(params: FirestoreClearParams) {
     await sleep(5000);
   }
   console.log(colors.bold(colors.green("Starting clearing of records 🏋️")));
-  await firestoreClear(pathReference, true);
+  const bar = new SingleBar(
+    {
+      format: "Clear | {value} documents | Elapsed: {duration_formatted}",
+      hideCursor: true,
+      clearOnComplete: true,
+    },
+    Presets.shades_classic
+  );
+  bar.start(0, 0);
+  const onProgress = (done: number) => bar.update(done);
+  await firestoreClear(pathReference, true, onProgress);
+  bar.stop();
   console.log(colors.bold(colors.green("All done 🎉")));
 }
 

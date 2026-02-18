@@ -82,6 +82,12 @@ const commandLineParams: { [param: string]: Params } =
       args: '<docId>',
       description: 'Document ID to start after (for resuming paginated exports).',
     },
+    pages: {
+      shortKey: 'g',
+      key: 'pages',
+      args: '<number>',
+      description: 'Number of pages to fetch in one run (requires --limit). Each page uses the last document ID from the previous page as startAfter.',
+    },
   };
 
 const buildOption = ({shortKey, key, args = '', description}: Params): [string, string] => [`-${shortKey} --${key} ${args}`, description];

@@ -3,6 +3,7 @@ import { Command } from "commander";
 import colors from "colors";
 import process from "process";
 import fs from "fs";
+import { Presets, SingleBar } from "cli-progress";
 import { firestoreExport } from "../lib";
 import {
   getCredentialsFromFile,
@@ -133,7 +134,18 @@ async function exportFirestoreData(params: FirestoreExportParams) {
   console.log(`Getting DB Reference for database ${params.databaseId}`);
   const pathReference = getDBReferenceFromPath(db, params.nodePath);
   console.log(colors.bold(colors.green("Starting Export 🏋️")));
-  const results = await firestoreExport(pathReference, true);
+  const bar = new SingleBar(
+    {
+      format: "Export | {value} documents | Elapsed: {duration_formatted}",
+      hideCursor: true,
+      clearOnComplete: true,
+    },
+    Presets.shades_classic
+  );
+  bar.start(0, 0);
+  const onProgress = (done: number) => bar.update(done);
+  const results = await firestoreExport(pathReference, true, onProgress);
+  bar.stop();
   console.log("Export from Firestore completed");
   const stringResults = JSON.stringify(
     results,

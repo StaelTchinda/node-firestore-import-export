@@ -71,7 +71,7 @@ const exportData = async (
 const getCollections = async (
   startingRef: admin.firestore.Firestore | FirebaseFirestore.DocumentReference,
   logs = false,
-  options?: ExportOptions
+  options?: ExportOptions,
   onProgress?: ExportProgressCallback,
   progressState?: { done: number }
 ) => {
@@ -106,7 +106,7 @@ const getDocuments = async (
   
   collectionRef: FirebaseFirestore.CollectionReference,
   logs = false,
-  options?: ExportOptions
+  options?: ExportOptions,
   onProgress?: ExportProgressCallback,
   progressState?: { done: number }
 ): Promise<ExportResultWithMetadata> => {

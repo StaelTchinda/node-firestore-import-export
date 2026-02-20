@@ -75,7 +75,11 @@ describe('Helpers', () => {
       expect(chunks).to.have.lengthOf(Math.floor(expectedLengthOfChunks));
 
       const lastItem = chunks.pop();
-      expect(lastItem).to.have.lengthOf(expectedRemainder);
+      // The last chunk has length (arrayLength % chunkSize) when there is a remainder,
+      // and length chunkSize when the division is exact (remainder 0). So expected last
+      // chunk length is remainder when remainder > 0, otherwise the full chunk size.
+      const expectedLastChunkLength = expectedRemainder === 0 ? randomChunkSize : expectedRemainder;
+      expect(lastItem).to.have.lengthOf(expectedLastChunkLength);
     });
   });
 

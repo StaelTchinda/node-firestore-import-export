@@ -3,6 +3,7 @@ import { Command } from "commander";
 import colors from "colors";
 import process from "process";
 import fs from "fs";
+import { Presets, SingleBar } from "cli-progress";
 import { firestoreExport, ExportOptions } from "../lib";
 import {
   getCredentialsFromFile,
@@ -96,15 +97,15 @@ function validateParams(commandParams: FirestoreExportParams): void {
     if (!commandParams.accountCredentialsPath) {
       throw new Error(
         colors.bold(colors.red("Missing: ")) +
-          colors.bold(params.accountCredentialsPath.key) +
-          " - " +
-          params.accountCredentialsPath.description
+        colors.bold(params.accountCredentialsPath.key) +
+        " - " +
+        params.accountCredentialsPath.description
       );
     }
     if (!fs.existsSync(commandParams.accountCredentialsPath)) {
       throw new Error(
         colors.bold(colors.red("Account credentials file does not exist: ")) +
-          colors.bold(commandParams.accountCredentialsPath)
+        colors.bold(commandParams.accountCredentialsPath)
       );
     }
   }
@@ -112,32 +113,32 @@ function validateParams(commandParams: FirestoreExportParams): void {
   if (!commandParams.backupPath) {
     throw new Error(
       colors.bold(colors.red("Missing: ")) +
-        colors.bold(params.backupPathExport.key) +
-        " - " +
-        params.backupPathExport.description
+      colors.bold(params.backupPathExport.key) +
+      " - " +
+      params.backupPathExport.description
     );
   }
   if (commandParams.limit != null && (commandParams.limit < 1 || isNaN(commandParams.limit))) {
     throw new Error(
       colors.bold(colors.red("Invalid: ")) +
-        colors.bold(params.limit.key) +
-        " - must be a positive number."
+      colors.bold(params.limit.key) +
+      " - must be a positive number."
     );
   }
   if (commandParams.pages != null && (commandParams.pages < 1 || isNaN(commandParams.pages))) {
     throw new Error(
       colors.bold(colors.red("Invalid: ")) +
-        colors.bold(params.pages.key) +
-        " - must be a positive number."
+      colors.bold(params.pages.key) +
+      " - must be a positive number."
     );
   }
   if (commandParams.pages != null && commandParams.pages > 1 && commandParams.limit == null) {
     throw new Error(
       colors.bold(colors.red("Invalid: ")) +
-        colors.bold(params.pages.key) +
-        " requires " +
-        colors.bold(params.limit.key) +
-        " to be set."
+      colors.bold(params.pages.key) +
+      " requires " +
+      colors.bold(params.limit.key) +
+      " to be set."
     );
   }
 }
@@ -205,9 +206,9 @@ async function exportFirestoreData(params: FirestoreExportParams) {
   const exportOptions: ExportOptions | undefined =
     params.limit != null
       ? {
-          limit: params.limit,
-          startAfter: params.startAfter,
-        }
+        limit: params.limit,
+        startAfter: params.startAfter,
+      }
       : undefined;
   if (exportOptions) {
     console.log(colors.blue(`Pagination: limit=${params.limit}${params.startAfter ? `, startAfter=${params.startAfter}` : ""}${params.pages != null && params.pages > 1 ? `, pages=${params.pages}` : ""}`));
@@ -223,13 +224,25 @@ async function exportFirestoreData(params: FirestoreExportParams) {
     while (pageNum <= pagesRequested) {
       console.log(colors.bold(colors.green(`Starting Export 🏋️ (page ${pageNum}/${pagesRequested})`)));
       const options: ExportOptions = { limit: params.limit!, startAfter };
-      const rawResults = await firestoreExport(pathReference, true, options);
+
+      const bar = new SingleBar(
+        {
+          format: "Export | {value} documents | Elapsed: {duration_formatted}",
+          hideCursor: true,
+          clearOnComplete: true,
+        },
+        Presets.shades_classic
+      );
+      bar.start(0, 0);
+      const onProgress = (done: number) => bar.update(done);
+      const rawResults = await firestoreExport(pathReference, true, options, onProgress);
+      bar.stop();
       const exportMetadata = rawResults.__export_metadata__;
       const results = exportMetadata
         ? (() => {
-            const { __export_metadata__, ...rest } = rawResults;
-            return rest;
-          })()
+          const { __export_metadata__, ...rest } = rawResults;
+          return rest;
+        })()
         : rawResults;
       const cursor = getCursorFromExportMetadata(exportMetadata);
       if (pageNum === 1 && cursor === null && exportMetadata?.collections && Object.keys(exportMetadata.collections).length > 1) {
@@ -272,15 +285,26 @@ async function exportFirestoreData(params: FirestoreExportParams) {
   }
 
   console.log(colors.bold(colors.green("Starting Export 🏋️")));
-  const rawResults = await firestoreExport(pathReference, true, exportOptions);
+  const bar = new SingleBar(
+    {
+      format: "Export | {value} documents | Elapsed: {duration_formatted}",
+      hideCursor: true,
+      clearOnComplete: true,
+    },
+    Presets.shades_classic
+  );
+  bar.start(0, 0);
+  const onProgress = (done: number) => bar.update(done);
+  const rawResults = await firestoreExport(pathReference, true, exportOptions, onProgress);
+  bar.stop();
   console.log("Export from Firestore completed");
 
   const exportMetadata = rawResults.__export_metadata__;
   const results = exportMetadata
     ? (() => {
-        const { __export_metadata__, ...rest } = rawResults;
-        return rest;
-      })()
+      const { __export_metadata__, ...rest } = rawResults;
+      return rest;
+    })()
     : rawResults;
 
   const stringResults = JSON.stringify(
@@ -361,7 +385,7 @@ async function exportFirestoreData(params: FirestoreExportParams) {
   } else {
     throw new Error(
       colors.bold(colors.red("Backup file is not a file or a folder: ")) +
-        colors.bold(params.backupPath)
+      colors.bold(params.backupPath)
     );
   }
 }

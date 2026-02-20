@@ -24,15 +24,21 @@ export interface ExportResultWithMetadata {
   [key: string]: any;
 }
 
+export type ExportProgressCallback = (done: number) => void;
+
 const exportData = async (
+  
   startingRef: admin.firestore.Firestore |
-  FirebaseFirestore.DocumentReference |
-  FirebaseFirestore.CollectionReference,
+    FirebaseFirestore.DocumentReference |
+    FirebaseFirestore.CollectionReference,
+ 
   logs = false,
-  options?: ExportOptions
+  options?: ExportOptions,
+  onProgress?: ExportProgressCallback
 ) => {
+  const progressState = { done: 0 };
   if (isLikeDocument(startingRef)) {
-    const collectionsPromise = getCollections(startingRef, logs, options);
+    const collectionsPromise = getCollections(startingRef, logs, options, onProgress, progressState);
     let dataPromise: Promise<any>;
     if (isRootOfDatabase(startingRef)) {
       dataPromise = Promise.resolve({});
@@ -52,7 +58,13 @@ const exportData = async (
       return out;
     });
   } else {
-    return await getDocuments(<FirebaseFirestore.CollectionReference>startingRef, logs, options);
+    return await getDocuments(
+      <FirebaseFirestore.CollectionReference>startingRef,
+      logs, 
+      options,
+      onProgress,
+      progressState
+    );
   }
 };
 
@@ -60,6 +72,8 @@ const getCollections = async (
   startingRef: admin.firestore.Firestore | FirebaseFirestore.DocumentReference,
   logs = false,
   options?: ExportOptions
+  onProgress?: ExportProgressCallback,
+  progressState?: { done: number }
 ) => {
   const collectionRefs = await safelyGetCollectionsSnapshot(startingRef, logs);
   const collectionNames: Array<string> = [];
@@ -67,7 +81,7 @@ const getCollections = async (
   for (const collectionRef of collectionRefs) {
     collectionNames.push(collectionRef.id);
     const useStartAfter = options?.startAfter != null && collectionRefs.length === 1 ? options.startAfter : undefined;
-    collectionPromises.push(getDocuments(collectionRef, logs, options?.limit != null ? { ...options, startAfter: useStartAfter } : undefined));
+    collectionPromises.push(getDocuments(collectionRef, logs, options?.limit != null ? { ...options, startAfter: useStartAfter } : undefined, onProgress, progressState));
   }
   const results = await batchExecutor(collectionPromises);
   const zipped: any = {};
@@ -89,9 +103,12 @@ const getCollections = async (
 };
 
 const getDocuments = async (
+  
   collectionRef: FirebaseFirestore.CollectionReference,
   logs = false,
   options?: ExportOptions
+  onProgress?: ExportProgressCallback,
+  progressState?: { done: number }
 ): Promise<ExportResultWithMetadata> => {
   logs && console.log(`Retrieving documents from ${collectionRef.path}`);
   const results: any = {};
@@ -115,7 +132,9 @@ const getDocuments = async (
   }
 
   const documentPromises: Array<Promise<object>> = [];
-  documentRefs.forEach((doc) => {
+  const allDocuments = await safelyGetDocumentReferences(collectionRef, logs);
+  allDocuments.forEach((doc) => {
+
     documentPromises.push(new Promise(async (resolve) => {
       const docSnapshot = await doc.get();
       const docDetails: any = {};
@@ -125,7 +144,7 @@ const getDocuments = async (
         docDetails[docSnapshot.id] = {};
       }
       const subOptions = usePagination ? undefined : options;
-      docDetails[docSnapshot.id]['__collections__'] = await getCollections(docSnapshot.ref, logs, subOptions);
+      docDetails[docSnapshot.id]['__collections__'] = await getCollections(docSnapshot.ref, logs, subOptions, onProgress, progressState);
       resolve(docDetails);
     }));
   });

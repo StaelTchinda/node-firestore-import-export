@@ -9,13 +9,52 @@ import { ICollection } from "../interfaces/ICollection";
 
 const DEFAULT_FIRESTORE_BATCH_SIZE: number = 300;
 
+export type ImportProgressCallback = (done: number, total: number) => void;
+
+function countDocumentsInCollection(data: ICollection): number {
+  if ("__collections__" in data) {
+    throw new Error(
+      'countDocumentsInCollection expects collection data without top-level "__collections__"'
+    );
+  }
+  let count = 0;
+  for (const documentKey of Object.keys(data)) {
+    count += 1;
+    const doc = data[documentKey];
+    if (doc && typeof doc === "object" && doc.hasOwnProperty("__collections__")) {
+      const sub = doc["__collections__"] as Record<string, ICollection>;
+      for (const collName of Object.keys(sub)) {
+        count += countDocumentsInCollection(sub[collName]);
+      }
+    }
+  }
+  return count;
+}
+
+function countDocumentsInData(data: any): number {
+  const dataToImport = { ...data };
+  if (!dataToImport.hasOwnProperty("__collections__")) {
+    return countDocumentsInCollection(dataToImport as ICollection);
+  }
+  const collections = dataToImport["__collections__"] as Record<string, ICollection>;
+  let total = 0;
+  for (const collection of Object.keys(collections)) {
+    total += countDocumentsInCollection(collections[collection]);
+  }
+  return total;
+}
+
 const importData = (
   data: any,
   startingRef: anyFirebaseRef,
   mergeWithExisting: boolean = true,
-  logs = false
+  logs = false,
+  onProgress?: ImportProgressCallback
 ): Promise<any> => {
   const dataToImport = { ...data };
+  const total = onProgress ? countDocumentsInData(dataToImport) : 0;
+  const progressState = { done: 0 };
+
   if (isLikeDocument(startingRef)) {
     if (!dataToImport.hasOwnProperty("__collections__")) {
       throw new Error(
@@ -31,7 +70,10 @@ const importData = (
             collections[collection],
             startingRef.collection(collection),
             mergeWithExisting,
-            logs
+            logs,
+            onProgress,
+            progressState,
+            total
           )
         );
       }
@@ -46,7 +88,10 @@ const importData = (
         documentData,
         startingRef.parent,
         mergeWithExisting,
-        logs
+        logs,
+        onProgress,
+        progressState,
+        total
       );
       return documentPromise.then(() => batchExecutor(collectionPromises));
     }
@@ -55,7 +100,10 @@ const importData = (
       dataToImport,
       <FirebaseFirestore.CollectionReference>startingRef,
       mergeWithExisting,
-      logs
+      logs,
+      onProgress,
+      progressState,
+      total
     );
   }
 };
@@ -64,7 +112,10 @@ const setDocuments = (
   data: ICollection,
   startingRef: FirebaseFirestore.CollectionReference,
   mergeWithExisting: boolean = true,
-  logs = false
+  logs = false,
+  onProgress?: ImportProgressCallback,
+  progressState?: { done: number },
+  total?: number
 ): Promise<any> => {
   logs && console.log(`Writing documents for ${startingRef.path}`);
   if ("__collections__" in data) {
@@ -96,6 +147,10 @@ const setDocuments = (
     });
     logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: Committing batch`);
     return batch.commit().then((results) => {
+      if (onProgress && progressState !== undefined && total !== undefined) {
+        progressState.done += documentKeys.length;
+        onProgress(progressState.done, total);
+      }
       logs && console.log(`Chunk ${index + 1}/${chunks.length}[${startingRef.path}]: Batch committed`);
       return results;
     });
@@ -104,7 +159,15 @@ const setDocuments = (
     .then(() => {
       return collections.map((col) => {
         logs && console.log(`Writing subcollection for ${col.path}`);
-        return setDocuments(col.collection, col.path, mergeWithExisting, logs);
+        return setDocuments(
+          col.collection,
+          col.path,
+          mergeWithExisting,
+          logs,
+          onProgress,
+          progressState,
+          total
+        );
       });
     })
     .then((subCollectionPromises) => batchExecutor(subCollectionPromises))

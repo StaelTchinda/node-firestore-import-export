@@ -132,8 +132,7 @@ const getDocuments = async (
   }
 
   const documentPromises: Array<Promise<object>> = [];
-  const allDocuments = await safelyGetDocumentReferences(collectionRef, logs);
-  allDocuments.forEach((doc) => {
+  documentRefs.forEach((doc) => {
 
     documentPromises.push(new Promise(async (resolve) => {
       const docSnapshot = await doc.get();

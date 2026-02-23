@@ -50,6 +50,12 @@ const commandLineParams: { [param: string]: Params } =
       description: `Firestore emulator host. Defaults to '${defaultFirestoreEmulatorHost}' if missing.`,
       defaultValue: defaultFirestoreEmulatorHost,
     },
+    projectId: {
+      shortKey: 'P',
+      key: 'projectId',
+      args: '<id>',
+      description: 'GCP project ID. When using the emulator with no credentials, required so the SDK uses the correct project. Falls back to GOOGLE_CLOUD_PROJECT or GCLOUD_PROJECT if not set.',
+    },
     yesToImport: {
       shortKey: 'y',
       key: 'yes',

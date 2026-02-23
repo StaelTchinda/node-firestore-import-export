@@ -31,6 +31,7 @@ interface FirestoreExportParams {
   pages?: number;
   emulator: boolean;
   emulatorHost?: string;
+  projectId?: string;
 }
 
 function setupProgram(): Command {
@@ -48,6 +49,7 @@ function setupProgram(): Command {
     .option(...buildOption(params.databaseId))
     .option(...buildOption(params.emulator))
     .option(...buildOption(params.emulatorHost))
+    .option(...buildOption(params.projectId))
     .option(...buildOption(params.limit))
     .option(...buildOption(params.startAfter))
     .option(...buildOption(params.pages))
@@ -72,6 +74,10 @@ function parseParams(program: Command): FirestoreExportParams {
   const emulator = Boolean(options[params.emulator.key]);
   const emulatorHost =
     options[params.emulatorHost.key] || params.emulatorHost.defaultValue;
+  const projectId =
+    options[params.projectId.key] ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT;
   const limitOpt = options[params.limit.key];
   const limit = limitOpt != null && limitOpt !== "" ? parseInt(String(limitOpt), 10) : undefined;
   const startAfter = options[params.startAfter.key] || undefined;
@@ -89,6 +95,7 @@ function parseParams(program: Command): FirestoreExportParams {
     pages: pages != null && !isNaN(pages) ? pages : undefined,
     emulator,
     emulatorHost,
+    projectId,
   };
 }
 
@@ -106,6 +113,17 @@ function validateParams(commandParams: FirestoreExportParams): void {
       throw new Error(
         colors.bold(colors.red("Account credentials file does not exist: ")) +
         colors.bold(commandParams.accountCredentialsPath)
+      );
+    }
+  } else {
+    const hasProjectId =
+      commandParams.projectId ||
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GCLOUD_PROJECT;
+    if (!hasProjectId) {
+      throw new Error(
+        colors.bold(colors.red("When using the emulator, projectId is required. ")) +
+        "Set it via --projectId or GOOGLE_CLOUD_PROJECT / GCLOUD_PROJECT environment variable."
       );
     }
   }
@@ -200,7 +218,7 @@ async function exportFirestoreData(params: FirestoreExportParams) {
     process.env["FIRESTORE_EMULATOR_HOST"] = params.emulatorHost;
   }
   console.log("Getting Firestore DB Reference");
-  const db = getFirestoreDBReference(credentials, params.databaseId);
+  const db = getFirestoreDBReference(credentials, params.databaseId, params.projectId);
   console.log(`Getting DB Reference for database ${params.databaseId}`);
   const pathReference = getDBReferenceFromPath(db, params.nodePath);
   const exportOptions: ExportOptions | undefined =

@@ -30,6 +30,7 @@ interface FirestoreClearParams {
 
   emulator: boolean;
   emulatorHost?: string;
+  projectId?: string;
 }
 
 function setupProgram(): Command {
@@ -47,6 +48,7 @@ function setupProgram(): Command {
     .option(...buildOption(params.databaseId))
     .option(...buildOption(params.emulator))
     .option(...buildOption(params.emulatorHost))
+    .option(...buildOption(params.projectId))
     .parse(process.argv);
 
   return program;
@@ -67,6 +69,10 @@ function parseParams(program: Command): FirestoreClearParams {
   const emulator = Boolean(options[params.emulator.key]);
   const emulatorHost =
     options[params.emulatorHost.key] || params.emulatorHost.defaultValue;
+  const projectId =
+    options[params.projectId.key] ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT;
 
   return {
     accountCredentialsPath,
@@ -76,6 +82,7 @@ function parseParams(program: Command): FirestoreClearParams {
     yesToNoWait,
     emulator,
     emulatorHost,
+    projectId,
   };
 }
 
@@ -95,6 +102,17 @@ function validateParams(commandParams: FirestoreClearParams): void {
           colors.bold(commandParams.accountCredentialsPath)
       );
     }
+  } else {
+    const hasProjectId =
+      commandParams.projectId ||
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GCLOUD_PROJECT;
+    if (!hasProjectId) {
+      throw new Error(
+        colors.bold(colors.red("When using the emulator, projectId is required. ")) +
+          "Set it via --projectId or GOOGLE_CLOUD_PROJECT / GCLOUD_PROJECT environment variable."
+      );
+    }
   }
 }
 
@@ -108,7 +126,7 @@ async function importFirestoreData(params: FirestoreClearParams) {
     process.env["FIRESTORE_EMULATOR_HOST"] = params.emulatorHost;
   }
   console.log("Getting Firestore DB Reference");
-  const db = getFirestoreDBReference(credentials, params.databaseId);
+  const db = getFirestoreDBReference(credentials, params.databaseId, params.projectId);
   console.log(`Getting DB Reference for database ${params.databaseId}`);
   const pathReference = getDBReferenceFromPath(db, params.nodePath);
   console.log(colors.bold("Reading data to import 📚"));
